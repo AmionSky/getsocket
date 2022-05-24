@@ -18,7 +18,7 @@ class BaseWebSocket {
   WebSocket? socket;
   SocketNotifier socketNotifier = SocketNotifier();
   bool isDisposed = false;
-  bool allowSelfSigned = true;
+  bool allowSelfSigned = false;
   ConnectionStatus connectionStatus = ConnectionStatus.closed;
 
   BaseWebSocket(this.url, {this.ping = const Duration(seconds: 5)});
