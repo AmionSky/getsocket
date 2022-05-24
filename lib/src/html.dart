@@ -13,7 +13,7 @@ enum ConnectionStatus {
 
 class BaseWebSocket {
   String url;
-  WebSocket socket;
+  WebSocket? socket;
   SocketNotifier socketNotifier = SocketNotifier();
   Duration ping;
   bool isDisposed = false;
@@ -23,32 +23,32 @@ class BaseWebSocket {
         ? url.replaceAll('https:', 'wss:')
         : url.replaceAll('http:', 'ws:');
   }
-  ConnectionStatus connectionStatus;
-  Timer _t;
+  ConnectionStatus connectionStatus = ConnectionStatus.closed;
+  Timer? _t;
 
   void connect() {
     try {
       connectionStatus = ConnectionStatus.connecting;
       socket = WebSocket(url);
-      socket.onOpen.listen((e) {
-        socketNotifier?.open();
+      socket!.onOpen.listen((e) {
+        socketNotifier.open?.call();
         _t = Timer?.periodic(ping, (t) {
-          socket.send('');
+          socket!.send('');
         });
         connectionStatus = ConnectionStatus.connected;
       });
 
-      socket.onMessage.listen((event) {
+      socket!.onMessage.listen((event) {
         socketNotifier.notifyData(event.data);
       });
 
-      socket.onClose.listen((e) {
+      socket!.onClose.listen((e) {
         _t?.cancel();
 
         connectionStatus = ConnectionStatus.closed;
-        socketNotifier.notifyClose(Close(e.reason, e.code));
+        socketNotifier.notifyClose(Close(e.reason ?? "Unknown", e.code ?? 500));
       });
-      socket.onError.listen((event) {
+      socket!.onError.listen((event) {
         _t?.cancel();
         socketNotifier.notifyError(Close(event.toString(), 0));
         connectionStatus = ConnectionStatus.closed;
@@ -81,16 +81,16 @@ class BaseWebSocket {
     socketNotifier.addEvents(event, message);
   }
 
-  void close([int status, String reason]) {
-    if (socket != null) socket.close(status, reason);
+  void close([int? status, String? reason]) {
+    socket?.close(status, reason);
   }
 
   void send(dynamic data) {
     if (connectionStatus == ConnectionStatus.closed) {
       connect();
     }
-    if (socket != null && socket.readyState == WebSocket.OPEN) {
-      socket.send(data);
+    if (socket != null && socket!.readyState == WebSocket.OPEN) {
+      socket!.send(data);
     } else {
       print('WebSocket not connected, message $data not sent');
     }
@@ -102,7 +102,6 @@ class BaseWebSocket {
 
   void dispose() {
     socketNotifier.dispose();
-    socketNotifier = null;
     isDisposed = true;
   }
 }

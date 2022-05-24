@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
-
 import 'dart:math';
 
 import 'socket_notifier.dart';
@@ -14,14 +13,15 @@ enum ConnectionStatus {
 
 class BaseWebSocket {
   String url;
-  WebSocket socket;
+  Duration ping;
+
+  WebSocket? socket;
   SocketNotifier socketNotifier = SocketNotifier();
   bool isDisposed = false;
-  BaseWebSocket(this.url, {this.ping = const Duration(seconds: 5)});
-  Duration ping;
   bool allowSelfSigned = true;
+  ConnectionStatus connectionStatus = ConnectionStatus.closed;
 
-  ConnectionStatus connectionStatus;
+  BaseWebSocket(this.url, {this.ping = const Duration(seconds: 5)});
 
   Future connect() async {
     if (isDisposed) {
@@ -33,23 +33,24 @@ class BaseWebSocket {
           ? await _connectForSelfSignedCert(url)
           : await WebSocket.connect(url);
 
-      socket.pingInterval = ping;
-      socketNotifier?.open();
+      socket!.pingInterval = ping;
+      socketNotifier.open?.call();
       connectionStatus = ConnectionStatus.connected;
 
-      socket.listen((data) {
+      socket!.listen((data) {
         socketNotifier.notifyData(data);
       }, onError: (err) {
         socketNotifier.notifyError(Close(err.toString(), 1005));
       }, onDone: () {
         connectionStatus = ConnectionStatus.closed;
         socketNotifier
-            .notifyClose(Close('Connection Closed', socket.closeCode));
+            .notifyClose(Close('Connection Closed', socket?.closeCode ?? 500));
       }, cancelOnError: true);
       return;
     } on SocketException catch (e) {
       connectionStatus = ConnectionStatus.closed;
-      socketNotifier.notifyError(Close(e.osError.message, e.osError.errorCode));
+      socketNotifier.notifyError(
+          Close(e.osError?.message ?? "Unknown", e.osError?.errorCode ?? 500));
       return;
     }
   }
@@ -74,10 +75,8 @@ class BaseWebSocket {
     socketNotifier.addEvents(event, message);
   }
 
-  void close([int status, String reason]) {
-    if (socket != null) {
-      socket.close(status, reason);
-    }
+  void close([int? status, String? reason]) {
+    socket?.close(status, reason);
   }
 
   void send(dynamic data) async {
@@ -86,14 +85,11 @@ class BaseWebSocket {
       await connect();
     }
 
-    if (socket != null) {
-      socket.add(data);
-    }
+    socket?.add(data);
   }
 
   void dispose() {
     socketNotifier.dispose();
-    socketNotifier = null;
     isDisposed = true;
   }
 
