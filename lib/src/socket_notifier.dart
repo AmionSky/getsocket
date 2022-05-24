@@ -8,7 +8,7 @@ class Close {
 
   @override
   String toString() {
-    return 'Closed by server [$reason => $message]!';
+    return 'Closed by server [$reason => ${message.trim().replaceAll("\n", " ")}]!';
   }
 }
 
