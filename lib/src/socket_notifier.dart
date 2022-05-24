@@ -1,5 +1,11 @@
 import 'dart:convert';
 
+enum ConnectionStatus {
+  connecting,
+  connected,
+  closed,
+}
+
 class Close {
   final String message;
   final int reason;

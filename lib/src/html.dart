@@ -5,12 +5,6 @@ import 'dart:html';
 
 import 'socket_notifier.dart';
 
-enum ConnectionStatus {
-  connecting,
-  connected,
-  closed,
-}
-
 class BaseWebSocket {
   String url;
   WebSocket? socket;
